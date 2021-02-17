@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: es-cluster
+spec:
+  serviceName: elasticsearch
+  replicas: 1
+  selector:
+    matchLabels:
+      name: elasticsearch
+  template:
+    metadata:
+      labels:
+        name: elasticsearch
+    spec:
+      containers:
+        - name: elasticsearch
+          image: elasticsearch:7.10.1
+          ports:
+            - containerPort: 9200
+              name: rest
+            - containerPort: 9300
+              name: inter-node
+          env:
+            - name: discovery.type
+              value: single-node
+        - name: kibana
+          image: kibana:7.10.1
+          ports:
+            - containerPort: 5601
+          env:
+            - name: ELASTICSEARCH_HOSTS
+              value: http://es-cluster-0:9200
+
+---
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: kibana
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       name: kibana
+#   template:
+#     metadata:
+#       labels:
+#         name: kibana
+#     spec:
+#       containers:
+#         - name: kibana
+#           image: kibana:7.10.1
+#           ports:
+#             - containerPort: 5601
+#           env:
+#             - name: ELASTICSEARCH_HOSTS
+#               value: http://es-cluster-0.elasticsearch.default.svc.local:9200
+# ---
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: alpine
+# spec:
+#   replicas: 1
+#   selector:
+#     matchLabels:
+#       name: alpine
+#   template:
+#     metadata:
+#       labels:
+#         name: alpine
+#     spec:
+#       containers:
+#         - name: alpine
+#           image: alpine:latest
+#           command: ['ping','localhost']
+# ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: elasticsearch
+  namespace: default
+spec:
+  clusterIP: None
+  selector:
+    name: elasticsearch
+  ports:
+  - port: 9200
+    name: rest
+  - port: 9300
+    name: inter-node
+  - port: 5601
+    name: kibana
+# ---
+# apiVersion: v1
+# kind: Service
+# metadata:
+#   name: kibana
+#   namespace: default
+# spec:
+#   selector:
+#     name: kibana
+#   ports:
+#   - port: 5601
